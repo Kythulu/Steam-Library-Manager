@@ -30,7 +30,7 @@ namespace Steam_Library_Manager.Definitions
                     Games.Clear();
 
                 // Foreach *.acf file found in library
-                //foreach (string game in Directory.EnumerateFiles(steamAppsPath.FullName, "*.acf", SearchOption.TopDirectoryOnly))
+                //foreach (string acfFilePath in Directory.EnumerateFiles(steamAppsPath.FullName, "*.acf", SearchOption.TopDirectoryOnly))
                 Parallel.ForEach(Directory.EnumerateFiles(steamAppsPath.FullName, "*.acf", SearchOption.TopDirectoryOnly), acfFilePath =>
                 {
                     // Define a new value and call KeyValue
@@ -45,6 +45,22 @@ namespace Steam_Library_Manager.Definitions
 
                     Functions.Games.AddNewGame(acfFilePath, Convert.ToInt32(Key["appID"].Value), !string.IsNullOrEmpty(Key["name"].Value) ? Key["name"].Value : Key["UserConfig"]["name"].Value, Key["installdir"].Value, this, Convert.ToInt64(Key["SizeOnDisk"].Value), false);
                 });
+                Console.WriteLine(this.Games.Count);
+                Parallel.ForEach(Directory.EnumerateDirectories(commonPath.FullName, "*", SearchOption.TopDirectoryOnly), gamedir =>
+                {
+                    bool found = false;
+                    // Look to see if this installdir matches an ACF we already found
+                    foreach(Game thisgame in this.Games.ToList())
+                    {
+                       if (String.Equals(thisgame.commonPath.FullName,gamedir, StringComparison.OrdinalIgnoreCase))
+                            found = true;
+                    }
+                    if (found == false)
+                    {
+                        Functions.Games.AddNewOrphanedGame(gamedir, this);
+                    }
+                });
+
                 // Do a loop for each *.zip file in library
                 //foreach (string gameArchive in Directory.EnumerateFiles(steamAppsPath.FullName, "*.zip", SearchOption.TopDirectoryOnly))
                 Parallel.ForEach(Directory.EnumerateFiles(steamAppsPath.FullName, "*.zip", SearchOption.TopDirectoryOnly), gameArchive =>

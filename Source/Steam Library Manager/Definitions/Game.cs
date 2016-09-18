@@ -25,7 +25,7 @@ namespace Steam_Library_Manager.Definitions
         public bool IsCompressed { get; set; }
         public bool IsSteamBackup { get; set; }
         public Library installedLibrary { get; set; }
-
+        public bool IsOrphaned { get; set; }
         public Framework.AsyncObservableCollection<FrameworkElement> generateRightClickMenuItems()
         {
             Framework.AsyncObservableCollection<FrameworkElement> rightClickMenu = new Framework.AsyncObservableCollection<FrameworkElement>();
@@ -311,6 +311,19 @@ namespace Steam_Library_Manager.Definitions
                 {
                     if (installationPath.Exists)
                         installationPath.Delete(true);
+                }
+                else if (IsOrphaned)
+                {
+                    List<FileSystemInfo> gameFiles = getFileList(false,false);
+                    Parallel.ForEach(gameFiles, currentFile =>
+                    {
+                        if (currentFile.Exists)
+                            currentFile.Delete();
+                    });
+
+                    // common folder, if exists
+                    if (commonPath.Exists)
+                        commonPath.Delete(true);
                 }
                 else
                 {

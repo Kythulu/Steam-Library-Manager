@@ -10,6 +10,65 @@ namespace Steam_Library_Manager.Functions
 {
     class Games
     {
+        public static void AddNewOrphanedGame(string installationPath, Definitions.Library Library)
+        {
+            try
+            {
+                // Make a new definition for game
+                Definitions.Game Game = new Definitions.Game();
+
+                // Set game appID
+                Game.appID = 0;
+
+                // Set game name
+                Game.appName = installationPath.Split(Path.DirectorySeparatorChar).Last();
+
+                Game.IsOrphaned = true;
+                Game.gameHeaderImage = $"http://cdn.akamai.steamstatic.com/steam/apps/0/header.jpg";
+
+                // Set acf name, appmanifest_107410.acf as example
+                //Game.acfName = $"appmanifest_{appID}.acf";
+
+                // Set game acf path
+                //Game.fullAcfPath = new FileInfo(acfPath);
+
+                // Set workshop acf name
+                //Game.workShopAcfName = $"appworkshop_{appID}.acf";
+
+                //Game.workShopAcfPath = new FileInfo(Path.Combine(Library.workshopPath.FullName, Game.workShopAcfName));
+
+                // Set installation path
+                DirectoryInfo testOldInstallations = new DirectoryInfo(installationPath);
+
+                Game.installationPath = (testOldInstallations.Exists) ? testOldInstallations : new DirectoryInfo(installationPath);
+
+                Game.installedLibrary = Library;
+
+                //Game.commonPath = new DirectoryInfo(Path.Combine(Library.commonPath.FullName, installationPath));
+                Game.commonPath = new DirectoryInfo(installationPath);
+                List<FileSystemInfo> gameFiles = Game.getFileList(false,false);
+
+                Parallel.ForEach(gameFiles, file =>
+                {
+                    Game.sizeOnDisk += (file as FileInfo).Length;
+                });
+
+                Game.prettyGameSize = fileSystem.FormatBytes(Game.sizeOnDisk);
+
+                Application.Current.Dispatcher.Invoke(delegate
+                {
+                    Game.contextMenuItems = Game.generateRightClickMenuItems();
+                }, System.Windows.Threading.DispatcherPriority.Normal);
+
+                // Add our game details to global list
+                Library.Games.Add(Game);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.ToString());
+            }
+        }
+
         public static void AddNewGame(string acfPath, int appID, string appName, string installationPath, Definitions.Library Library, long sizeOnDisk, bool isCompressed, bool isSteamBackup = false)
         {
             try
